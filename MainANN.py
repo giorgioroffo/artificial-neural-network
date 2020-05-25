@@ -2,34 +2,57 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-import keras
-from keras.models import Sequential
-from keras.layers import Dense
+
+
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import GridSearchCV
+
 from sklearn.metrics import confusion_matrix
 from sklearn.compose import ColumnTransformer 
 
+import keras
+from keras.wrappers.scikit_learn import KerasClassifier
+
+
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import Dropout
+
+def buildANN(optimizer = 'adam', numUnits = 6):
+    model = Sequential()
+    model.add(Dense(units = numUnits, kernel_initializer = 'uniform', activation = 'relu', input_dim = 11))
+    model.add(Dropout(rate=0.1))
+    model.add(Dense(units = numUnits, kernel_initializer = 'uniform', activation = 'relu'))
+    model.add(Dropout(rate=0.1))
+    model.add(Dense(units = 1, kernel_initializer = 'uniform', activation = 'sigmoid'))
+    model.compile(optimizer = optimizer, loss = 'binary_crossentropy', metrics = ['accuracy'])
+    return model
+
+
 # Importing the dataset
 dataset = pd.read_csv('dataset.csv')
-X = dataset.iloc[:, 3:13].values
-y = dataset.iloc[:, 13].values
+X = dataset.iloc[:, :-1].values
+y = dataset.iloc[:, -1].values
 
 # Encoding categorical data
-labelencoder_X = LabelEncoder()
-X[:, 1] = labelencoder_X.fit_transform(X[:, 1])
-labelencoder_X = LabelEncoder()
-X[:, 2] = labelencoder_X.fit_transform(X[:, 2])
+labelEncoder = LabelEncoder()
+X[:, 1] = labelEncoder.fit_transform(X[:, 1])
+labelEncoder = LabelEncoder()
+X[:, 2] = labelEncoder.fit_transform(X[:, 2])
 
 transformer = ColumnTransformer(
     transformers=[
-        ("Country",        # Just a name
-         OneHotEncoder(), # The transformer class
-         [1]            # The column(s) to be applied on.
+        ("Country",         
+         OneHotEncoder(), 
+         [1] 
          )
     ], remainder='passthrough'
 )
+
 X = transformer.fit_transform(X)
 
 # Avoid dummy variable trap on idx 
@@ -43,24 +66,33 @@ sc = StandardScaler()
 X_train = sc.fit_transform(X_train)
 X_test = sc.transform(X_test)
 
+# Create keras wrapper fo the ANN
+annModel = KerasClassifier(build_fn = buildANN)
 
-# Initialising the ANN
-classifier = Sequential()
+# Parameter Tuning
+parameters = {'batch_size': [25, 32],
+              'epochs': [50, 100, 500],
+              'optimizer': ['adam', 'rmsprop']}
 
-# Adding the input layer and the first hidden layer
-classifier.add(Dense(units = 6, kernel_initializer = 'uniform', activation = 'relu', input_dim = 11))
+grid_search = GridSearchCV(estimator = annModel,
+                           param_grid = parameters,
+                           scoring = 'accuracy',
+                           cv = 10)
 
-# Adding the second hidden layer
-classifier.add(Dense(units = 6, kernel_initializer = 'uniform', activation = 'relu'))
+grid_search = grid_search.fit(X_train, y_train)
 
-# Adding the output layer
-classifier.add(Dense(units = 1, kernel_initializer = 'uniform', activation = 'sigmoid'))
+best_parameters = grid_search.best_params_
 
-# Compiling the ANN
-classifier.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
+best_accuracy = grid_search.best_score_
+
+print('best_accuracy= ' + str(best_accuracy))
+
+
+print('Fitting the ANN to the Training set with the parameters found by GridSearchCV')
 
 # Fitting the ANN to the Training set
-classifier.fit(X_train, y_train, batch_size = 10, epochs = 100)
+classifier = buildANN(optimizer=best_parameters.get('optimizer'))
+classifier.fit(X_train, y_train, best_parameters.get('batch_size'), epochs = best_parameters.get('epochs'))
 
 
 # Predicting the Test set results
