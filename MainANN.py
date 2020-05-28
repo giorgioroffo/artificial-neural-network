@@ -1,3 +1,9 @@
+# Artificial Neural Network - Fully Connected
+# @Author: Giorgio Roffo
+# @year: 2017
+# @Description: Simple implementation of an ANN. 
+#               Use this as a template for your ANN.
+
 # Importing the libraries
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,21 +23,7 @@ from sklearn.compose import ColumnTransformer
 import keras
 from keras.wrappers.scikit_learn import KerasClassifier
 
-
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.layers import Dropout
-
-def buildANN(optimizer = 'adam', numUnits = 6):
-    model = Sequential()
-    model.add(Dense(units = numUnits, kernel_initializer = 'uniform', activation = 'relu', input_dim = 11))
-    model.add(Dropout(rate=0.1))
-    model.add(Dense(units = numUnits, kernel_initializer = 'uniform', activation = 'relu'))
-    model.add(Dropout(rate=0.1))
-    model.add(Dense(units = 1, kernel_initializer = 'uniform', activation = 'sigmoid'))
-    model.compile(optimizer = optimizer, loss = 'binary_crossentropy', metrics = ['accuracy'])
-    return model
-
+from architectures import *
 
 # Importing the dataset
 dataset = pd.read_csv('dataset.csv')
@@ -65,6 +57,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, rando
 sc = StandardScaler()
 X_train = sc.fit_transform(X_train)
 X_test = sc.transform(X_test)
+
 
 # Create keras wrapper fo the ANN
 annModel = KerasClassifier(build_fn = buildANN)
