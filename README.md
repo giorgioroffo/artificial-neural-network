@@ -1,4 +1,9 @@
 # Template implementation of an Artificial Neural Network in keras 
+
+
+### Note: This repository contains homework assignments for the Artificial Intelligence course at the University of Glasgow, created while I served as the assistant lecturer and held a postdoctoral position, focusing on Python, deep learning, and associated tools.
+
+
 Dataset:
 
 To make this dataset, the bank gathered information such as customer id, credit score, gender, age, tenure, balance, if the customer is active, has a credit card, etc. During a period of 6 months, the bank observed if these customers left or stayed in the bank.  
